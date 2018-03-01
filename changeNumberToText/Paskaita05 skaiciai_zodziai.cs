@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 class SkaiciuKonvertavimasIZodzius
@@ -9,145 +10,210 @@ class SkaiciuKonvertavimasIZodzius
     static void Main(string[] args)
     {
         bool whetherRepeat = true;
+        Console.Title = "Skaiciu konvertavimas i zodzius";
+
         do
         {
             Console.WriteLine("Iveskite skaiciu nuo -2 147 483 647 iki 2 147 483 647");
             string number = Console.ReadLine();
             Console.WriteLine();
 
-            if (IsNumber(number) == true)
+            double checkBigNumbers;                                     // Didesniu skaiciu patikrinimui
+            string errorMessage;
+
+            if (IsNumber(number, out checkBigNumbers, out errorMessage) == true)
             {
-                int numericValue = Convert.ToInt32(number);
-                whetherRepeat = false;
+                int numericValue = Convert.ToInt32(checkBigNumbers);
 
-                Console.WriteLine(SpausdintiVienetus(numericValue));
+                Console.ForegroundColor = ConsoleColor.DarkBlue;
+                Console.BackgroundColor = ConsoleColor.White;
+                Console.WriteLine(number + ": " + PrintNumberToWords(numericValue));
+                Console.ResetColor();
+                Console.WriteLine("Noredami ivesti nauja skaiciu, spauskite bet kuri mygtuka. Jei norite iseiti - spauskite ESC.");
+
+                whetherRepeat = ExitOrContinue();
+                Console.Clear();
             }
-
-
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine("\n" + errorMessage);
+                Console.ResetColor();
+                Thread.Sleep(3000);
+                Console.Clear();
+            }
         } while (whetherRepeat);
 
         // Masyvas2();
     }
 
-    static bool IsNumber(string isNumber)           // Patikrina ar "skaicius" ivestas geru formatu.
+    private static bool ExitOrContinue()
+    {
+        char keyPress = Console.ReadKey().KeyChar;
+        char keyPressESC = (char)ConsoleKey.Escape;
+
+        if (keyPress == keyPressESC)
+        {
+            return false;
+        }
+        else
+        {
+            return true;
+        }
+    }
+
+    // Patikrina ar "skaicius" ivestas geru formatu.
+    static bool IsNumber(string isNumber, out double bigNumber, out string errorMsg)
     {
         bool isGoodNumber = true;
+        errorMsg = "";
+        bigNumber = 0;
+
+        if (string.IsNullOrWhiteSpace(isNumber))
+        {
+            errorMsg = "Ivestis tuscia";
+            return isGoodNumber = false;
+        }
 
         for (int i = 0; i < isNumber.Length; i++)
         {
             char symbol = isNumber[i];
-            if (symbol != '0' || symbol != '1' || symbol != '2' || symbol != '3' || symbol != '4' || symbol != '5' || symbol != '6' || symbol != '7' || symbol != '8' || symbol != '9')
+
+            if (symbol == '0' && i == 0)
             {
-                if (symbol == '-')
+                isGoodNumber = false;
+                errorMsg = "Skaicius negali prasideti nuliu.";
+                break;
+            }
+            else if (symbol == '0' || symbol == '1' || symbol == '2' || symbol == '3' || symbol == '4' || symbol == '5' || symbol == '6' || symbol == '7' || symbol == '8' || symbol == '9' || symbol == '-')
+            {
+                if (symbol == '-' && i != 0)                            // jeigu "-" ne pirmoje pozicijoje - ivestis bloga
                 {
-                    if (i != 0)                     // jeigu "-" ne pirmoje pozicijoje - ivestis bloga
-                    {
-                        isGoodNumber = false;
-                        break;                      // ciklas toliau nevykdomas
-                    }
+                    isGoodNumber = false;
+                    errorMsg = "Skaicius privalo buti sudarytas is skaitmenu 0-9 ir/arba \"-\" zenklo priekyje.";
+                    break;                                              // ciklas toliau nevykdomas
                 }
-                else
-                {
-                    isGoodNumber = true;
-                }
+                //else if (symbol == '-' && i == 0)
+                //{
+                //    isGoodNumber = true;
+                //    break;
+                //}
+
+                isGoodNumber = true;
             }
             else
             {
-                isGoodNumber = true;
+                isGoodNumber = false;
+                errorMsg = "Skaicius privalo buti sudarytas is skaitmenu 0-9 ir/arba \"-\" zenklo priekyje.";
+                break;
             }
         }
+
+        if (isGoodNumber)
+        {
+            bigNumber = Convert.ToDouble(isNumber);
+
+            if (bigNumber > int.MaxValue || bigNumber < int.MinValue)       // Patikrina int rezius.
+            {
+                isGoodNumber = false;
+                errorMsg = "Skaicius nepatenka i reikalaujama intervala, prasome ivesti skaiciu dar karta.";
+                return isGoodNumber;
+            }
+        }
+
         return isGoodNumber;
-
     }
-        
-    static string SpausdintiVienetus(int inputNumber)                        // skaiciu uzraso zodine israiska
-    {
-        // meta bloga zodine israiska su tokiais skaiciais kaip 11000, 21000, 31000 etc
 
-        if (inputNumber == 0)                                   
+    static string PrintNumberToWords(int inputNumber)                        // skaiciu uzraso zodine israiska
+    {
+        // laikini string, lietuvisku galuniu patikrinimui su "EndsWith()"
+        string tempStringMillions = Convert.ToString(inputNumber / 1000000);
+        string tempStringThousands = Convert.ToString(inputNumber / 1000);
+
+        if (inputNumber == 0)
             return "nulis";
 
         if (inputNumber < 0)
-            return "minus " + SpausdintiVienetus(Math.Abs(inputNumber));     // jei skaicius neigiamas, vel kviecia sita funkcija pagal absoliuciaja skaiciaus verte, pradzioje pridedant minuso zenkla
+            return "minus " + PrintNumberToWords(Math.Abs(inputNumber));     // jei skaicius neigiamas, vel kviecia sita funkcija pagal absoliuciaja skaiciaus verte, pradzioje pridedant minuso zenkla
 
-        string skaiciusZodziais = null;
+        string numberInWords = string.Empty;
 
         if ((inputNumber / 1000000000 > 1))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000000000) + " milijardai ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000000000) + " milijardai ";
             inputNumber %= 1000000000;
         }
 
         if ((inputNumber / 1000000000 == 1))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000000000) + " milijardas ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000000000) + " milijardas ";
             inputNumber %= 1000000000;
         }
 
-        if ((inputNumber / 1000000) > 1 && (Convert.ToString((inputNumber / 1000000)).EndsWith("0") || Convert.ToString((inputNumber / 1000000)).EndsWith("11") || Convert.ToString((inputNumber / 1000000)).EndsWith("12") || Convert.ToString((inputNumber / 1000000)).EndsWith("13") || Convert.ToString((inputNumber / 1000000)).EndsWith("14") || Convert.ToString((inputNumber / 1000000)).EndsWith("15") || Convert.ToString((inputNumber / 1000000)).EndsWith("16") || Convert.ToString((inputNumber / 1000000)).EndsWith("17") || Convert.ToString((inputNumber / 1000000)).EndsWith("18") || Convert.ToString((inputNumber / 1000000)).EndsWith("19")))
+        if ((inputNumber / 1000000) > 1 && (tempStringMillions.EndsWith("0") || tempStringMillions.EndsWith("11") || tempStringMillions.EndsWith("12") || tempStringMillions.EndsWith("13") || tempStringMillions.EndsWith("14") || tempStringMillions.EndsWith("15") || tempStringMillions.EndsWith("16") || tempStringMillions.EndsWith("17") || tempStringMillions.EndsWith("18") || tempStringMillions.EndsWith("19")))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000000) + " milijonu ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000000) + " milijonu ";
             inputNumber %= 1000000;
         }
 
-        else if ((inputNumber / 1000000) >= 1 && Convert.ToString((inputNumber / 1000000)).EndsWith("1"))
+        else if ((inputNumber / 1000000) >= 1 && tempStringMillions.EndsWith("1"))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000000) + " milijonas ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000000) + " milijonas ";
             inputNumber %= 1000000;
         }
 
         else if ((inputNumber / 1000000) > 1)
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000000) + " milijonai ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000000) + " milijonai ";
             inputNumber %= 1000000;
         }
 
-        if ((inputNumber / 1000) > 1 && (Convert.ToString((inputNumber / 1000)).EndsWith("0") || Convert.ToString((inputNumber / 1000)).EndsWith("11") || Convert.ToString((inputNumber / 1000)).EndsWith("12") || Convert.ToString((inputNumber / 1000)).EndsWith("13") || Convert.ToString((inputNumber / 1000)).EndsWith("14") || Convert.ToString((inputNumber / 1000)).EndsWith("15") || Convert.ToString((inputNumber / 1000)).EndsWith("16") || Convert.ToString((inputNumber / 1000)).EndsWith("17") || Convert.ToString((inputNumber / 1000)).EndsWith("18") || Convert.ToString((inputNumber / 1000)).EndsWith("19")))
+        if ((inputNumber / 1000) > 1 && (tempStringThousands.EndsWith("0") || tempStringThousands.EndsWith("11") || tempStringThousands.EndsWith("12") || tempStringThousands.EndsWith("13") || tempStringThousands.EndsWith("14") || tempStringThousands.EndsWith("15") || tempStringThousands.EndsWith("16") || tempStringThousands.EndsWith("17") || tempStringThousands.EndsWith("18") || tempStringThousands.EndsWith("19")))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000) + " tukstanciu ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000) + " tukstanciu ";
             inputNumber %= 1000;
         }
 
-        else if ((inputNumber / 1000) >= 1 && Convert.ToString((inputNumber / 1000)).EndsWith("1"))
+        else if ((inputNumber / 1000) >= 1 && tempStringThousands.EndsWith("1"))
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000) + " tukstantis ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000) + " tukstantis ";
             inputNumber %= 1000;
         }
 
         else if ((inputNumber / 1000) > 1)
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 1000) + " tukstanciai ";
+            numberInWords += PrintNumberToWords(inputNumber / 1000) + " tukstanciai ";
             inputNumber %= 1000;
         }
 
         if ((inputNumber / 100) > 1)
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 100) + " simtai ";
+            numberInWords += PrintNumberToWords(inputNumber / 100) + " simtai ";
             inputNumber %= 100;
         }
 
         if ((inputNumber / 100) == 1)
         {
-            skaiciusZodziais += SpausdintiVienetus(inputNumber / 100) + " simtas ";
+            numberInWords += PrintNumberToWords(inputNumber / 100) + " simtas ";
             inputNumber %= 100;
         }
 
         if (inputNumber > 0)
         {
-            string[] vienetai = new[] { "nulis", "vienas", "du", "trys", "keturi", "penki", "sesi", "septyni", "astuoni", "devyni", "desimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "sesiolika", "septyniolika", "astuoniolika", "devyniolika" };
-            string[] desimtys = new[] { "nulis", "desimt", "dvidesimt", "trisdesimt", "keturiasdesimt", "penkiasdesimt", "sesiasdesimt", "septyniasdesimt", "astuoniasdesimt", "devyniasdesimt" };
+            string[] units = new[] { "nulis", "vienas", "du", "trys", "keturi", "penki", "sesi", "septyni", "astuoni", "devyni", "desimt", "vienuolika", "dvylika", "trylika", "keturiolika", "penkiolika", "sesiolika", "septyniolika", "astuoniolika", "devyniolika" };
+            string[] tens = new[] { "nulis", "desimt", "dvidesimt", "trisdesimt", "keturiasdesimt", "penkiasdesimt", "sesiasdesimt", "septyniasdesimt", "astuoniasdesimt", "devyniasdesimt" };
 
             if (inputNumber < 20)
-                skaiciusZodziais += vienetai[inputNumber];
+                numberInWords += units[inputNumber];
             else
             {
-                skaiciusZodziais += desimtys[inputNumber / 10];
+                numberInWords += tens[inputNumber / 10];
                 if ((inputNumber % 10) > 0)
-                    skaiciusZodziais += " " + vienetai[inputNumber % 10];
+                    numberInWords += " " + units[inputNumber % 10];
             }
         }
 
-        return skaiciusZodziais;
+        return numberInWords;
     }
 
     static void Masyvas1()
@@ -182,7 +248,7 @@ class SkaiciuKonvertavimasIZodzius
         for (int i = 0; i < sakinys.Length; i++)
         {
             for (int a = i + 1; a < sakinys.Length; a++)
-            // kai i = 0, sitas ciklas viduje patikrina visas masyvo pozicijas nuo 1 iki 9
+            // kai i = 0, sitas iklas viduje patikrina visas masyvo pozicijas nuo 1 iki 9
             // kai i = 1, sitas ciklas viduje patikrina visas masyvo pozicijas nuo 2 iki 9 
             // etc....
             {
@@ -194,22 +260,21 @@ class SkaiciuKonvertavimasIZodzius
             }
             Console.Write((sakinys[i]) + " ");
         }
-
         Console.WriteLine();
         string[] naujasSakinys = new string[sakinys.Length];    // Naujas tuscias masyvas
         int sakinioPradzia = 0;
         int sakinioGalas = naujasSakinys.Length - 1;
 
-        for (int i = 0; i < sakinys.Length; i++)
+        foreach (string zodis in sakinys)
         {
-            if (sakinys[i] == "!")                              // Sauktukai surikiuojami masyvo gale.
+            if (zodis == "!")                              // Sauktukai surikiuojami masyvo gale.
             {
-                naujasSakinys[sakinioGalas] = sakinys[i];
+                naujasSakinys[sakinioGalas] = zodis;
                 sakinioGalas--;
             }
             else                                                // Zodziai surikiuojami sakinio pradzioje.
             {
-                naujasSakinys[sakinioPradzia] = sakinys[i];
+                naujasSakinys[sakinioPradzia] = zodis;
                 sakinioPradzia++;
             }
         }
