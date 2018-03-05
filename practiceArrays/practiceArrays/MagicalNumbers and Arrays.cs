@@ -126,7 +126,7 @@ class Program
         bool digit5 = false;
         bool digit6 = false;
 
-        // Patikrina ar visi skaiciai abiejuose masyvuose yra tokie patys
+        // Patikrina ar visi skaiciai abiejuose masyvuose yra tokie patys, tačiau su SKIRTINGU indeksu
         for (int j = 0; ;)
         {
             if (((array1[1] == array2[j]) || (array1[2] == array2[j]) || (array1[3] == array2[j]) || (array1[4] == array2[j]) || (array1[5] == array2[j])) && (array1[0] != array2[j]))
